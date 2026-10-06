@@ -1,16 +1,16 @@
 using System.Text.Json;
-using NotificationGate.Models;
 using NotificationGate.Services;
 
 namespace NotificationGate;
 
 public class Worker : BackgroundService
 {
-    private static ILogger<Worker> _logger;
+    private readonly ILogger<Worker> _logger;
     private readonly IConfiguration _configuration;
-    private static KafkaService _kafkaService;
+    private readonly KafkaService _kafkaService;
     private readonly FileSystemWatcher _fileSystemWatcher;
-    private static FileGetAlert _fileGetAlert;
+    private readonly FileGetAlert _fileGetAlert;
+    private string _topic;
 
     public Worker(ILogger<Worker> logger,
         IConfiguration configuration,
@@ -20,6 +20,7 @@ public class Worker : BackgroundService
         _configuration = configuration;
         _kafkaService = kafkaService;
         _fileGetAlert = fileGetAlert;
+        _topic = _configuration["Kafka:Topic"];
 
         var fileWatchPath = _configuration["Alert:AlertPath"];
 
@@ -45,14 +46,14 @@ public class Worker : BackgroundService
         }
     }
 
-    private static void OnCreated(object sender, FileSystemEventArgs e)
+    private void OnCreated(object sender, FileSystemEventArgs e)
     {
         _logger.LogInformation($"Created: {e.FullPath}");
 
         try
         {
             var alert = _fileGetAlert.GetAlert(e.FullPath);
-            _kafkaService.Send("alert-report", alert);
+            _kafkaService.Send(_topic, alert);
         }
         catch (FileNotFoundException ex)
         {

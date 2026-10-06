@@ -27,10 +27,5 @@ public class FileGetAlert
         {
             throw new JsonException($"faild to Deserialize alert {jsonPath}");
         }
-        catch (Exception e)
-        {
-            throw;
-        }
-        
     }
 }
